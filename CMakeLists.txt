@@ -10,15 +10,15 @@ set(LIBELF, ${CMAKE_SOURCE_DIR}/lib/libelfin/elf/libelf++.a)
 set(LIBLINENOISE ${CMAKE_SOURCE_DIR}/lib/linenoise/liblinenoise.a)
 file(GLOB SOURCES "src/*.cpp")
 
-set(cmake_runtime_output_directory ${CMAKE_BINARY_DIR}/bin)
-set(cmake_library_output_directory ${CMAKE_BINARY_DIR}/lib)
-set(cmake_archive_output_directory ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 foreach(outputconfig ${CMAKE_CONFIGURATION_TYPES})
-    string(TOUPPER ${outputconfig} outputconfig)
-    set(cmake_runtime_output_directory_${outputconfig} ${cmake_runtime_output_directory}/${outputconfig})
-    set(cmake_library_output_directory_${outputconfig} ${cmake_library_output_directory}/${outputconfig})
-    set(cmake_archive_output_directory_${outputconfig} ${cmake_archive_output_directory}/${outputconfig})
+    string(TOUPPER ${OUTPUTCONFIG} outputconfig)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${OUTPUTCONFIG})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${OUTPUTCONFIG})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${OUTPUTCONFIG})
     
 endforeach()
 

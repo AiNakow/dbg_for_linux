@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
         execl(prog, prog, nullptr);
     }
     else if (pid >= 1) {
-        std::cout << "Starting debugging process" << pid << std::endl;
+        std::cout << "Starting debugging process: " << pid << std::endl;
         Debugger debugger(prog, pid);
         debugger.run();
     }
