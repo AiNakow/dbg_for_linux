@@ -1,0 +1,4 @@
+linenoise_example
+*.a
+*.dSYM
+history.txt
