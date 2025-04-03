@@ -22,7 +22,19 @@ void Debugger::handle_command(const std::string& line) {
         continue_execution();
     }
     else if (is_prefix("break", command)) {
+        if (args.size() < 2)
+        {
+            std::cout << "Target address lost." << std::endl << "eg: break 0x12345678" << std::endl;
+            return;
+        }
         
+        std::regex pattern("^0x[0-9a-f]+$", std::regex::icase);
+        if (!std::regex_match(args[1], pattern)) {
+            std::cout << "Invalid address: " << args[1] << std::endl;
+            return;
+        }
+        std::string addr(args[1], 2);
+        set_breakpoint_at_address(std::stol(addr, nullptr, 16));
     }
     else {
         std::cerr << "Unknown command: " << command << std::endl;
@@ -35,4 +47,11 @@ void Debugger::continue_execution() {
     int wait_status;
     auto options = 0;
     waitpid(pid, &wait_status, options);
+}
+
+void Debugger::set_breakpoint_at_address(std::intptr_t addr) {
+    std::cout << "Set breakpoint at 0x" << std::hex << addr << std::endl;
+    Breakpoint breakpoint(pid, addr);
+    breakpoint.enable();
+    breakpoint_map.insert({addr, breakpoint});
 }
