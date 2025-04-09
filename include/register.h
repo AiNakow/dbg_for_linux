@@ -4,6 +4,7 @@
 #include <string>
 #include <algorithm>
 #include <cstdint>
+#include <stdexcept>
 #include <sys/ptrace.h>
 #include <sys/user.h>
 
@@ -56,9 +57,11 @@ const std::array<reg_descriptor, n_registers> g_register_descriptors {{
     { reg::gs, 55, "gs" },
 }};
 
-uint64_t get_register_value(const reg r);
-void set_register_value(const reg r, uint64_t value);
+uint64_t get_register_value(pid_t pid, const reg r);
+uint64_t get_register_value_from_dwarf_register(pid_t pid, int regnum);
+void set_register_value(pid_t pid, const reg r, uint64_t value);
 std::string get_register_name(const reg r);
+reg get_register_from_name(std::string& name);
 
 
 #endif // REGISTER_H
