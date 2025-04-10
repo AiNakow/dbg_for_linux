@@ -15,7 +15,8 @@
 #include <sys/wait.h>
 #include <unordered_map>
 
-class Debugger {
+class Debugger
+{
 public:
 	Debugger(std::string prog_name, pid_t pid) : prog_name(prog_name), pid(pid) {}
 	~Debugger() {}
@@ -27,6 +28,10 @@ public:
 	void dump_registers();
 	uint64_t read_memory(std::uintptr_t addr);
 	void write_memory(std::uintptr_t addr, uint64_t value);
+	uint64_t get_pc();
+	void set_pc(uint64_t pc);
+	void step_over_breakpoint();
+	void wait_for_signal();
 
 private:
 	std::string prog_name;
