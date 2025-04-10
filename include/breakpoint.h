@@ -4,16 +4,17 @@
 #include <sys/ptrace.h>
 #include <cstdint>
 
-class Breakpoint {
+class Breakpoint
+{
 public:
-    Breakpoint(pid_t pid, std::intptr_t addr): pid(pid), addr(addr), enabled(false), saved_data() {}
+    Breakpoint(pid_t pid, std::intptr_t addr) : pid(pid), addr(addr), enabled(false), saved_data() {}
     ~Breakpoint() {}
 
     void enable();
     void disable();
 
-    auto is_enabled() const -> bool {return enabled;}
-    auto get_address() const -> std::intptr_t {return addr;}
+    auto is_enabled() const -> bool { return enabled; }
+    auto get_address() const -> std::intptr_t { return addr; }
 
 private:
     pid_t pid;
@@ -22,4 +23,4 @@ private:
     uint8_t saved_data;
 };
 
-#endif //BREAKPOINT_H
+#endif // BREAKPOINT_H
