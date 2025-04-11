@@ -7,7 +7,7 @@ void Debugger::run()
     waitpid(pid, &wait_status, options);
 
     char *line = nullptr;
-    while ((line = linenoise("debugger> ")) != nullptr)
+    while ((line = linenoise("edb> ")) != nullptr)
     {
         handle_command(line);
         linenoiseHistoryAdd(line);
@@ -54,6 +54,7 @@ void Debugger::handle_command(const std::string &line)
             {
                 std::cout << "Need register name." << std::endl
                           << "eg: register read rax" << std::endl;
+                return;
             }
             reg r;
             try
@@ -67,8 +68,8 @@ void Debugger::handle_command(const std::string &line)
             }
             if (is_prefix("read", args[1]))
             {
-                std::cout << std::setfill('0') << std::setw(16) << std::hex
-                          << get_register_value(pid, r);
+                std::cout << "0x" << std::setfill('0') << std::setw(16) << std::hex
+                          << get_register_value(pid, r) << std::endl;
             }
             if (is_prefix("write", args[1]))
             {
@@ -77,6 +78,7 @@ void Debugger::handle_command(const std::string &line)
                     std::cout << "Need register value." << std::endl
                               << "eg: register write rax 0x12345678"
                               << std::endl;
+                    return;
                 }
                 std::regex pattern("^0x[0-9a-f]+$", std::regex::icase);
                 if (!std::regex_match(args[3], pattern))
@@ -166,10 +168,17 @@ void Debugger::set_breakpoint_at_address(std::uintptr_t addr)
 
 void Debugger::dump_registers()
 {
+    int count = -1;
     for (const auto &rd : g_register_descriptors)
     {
-        std::cout << rd.name << "0x" << std::setfill('0') << std::setw(16)
-                  << std::hex << get_register_value(pid, rd.r) << std::endl;
+        std::cout << std::setfill(' ') << std::setw(10) << std::left << rd.name << "0x" << std::setfill('0') << std::setw(16)
+                  << std::hex << get_register_value(pid, rd.r) << " | ";
+        ++count;
+        if (count % 4 == 3 || count == g_register_descriptors.size() - 1)
+        {
+            std::cout << std::endl;
+        }
+        
     }
 }
 
@@ -217,12 +226,14 @@ void Debugger::set_pc(uint64_t pc)
 void Debugger::step_over_breakpoint()
 {
     auto previous_pc = get_pc() - 1;
-    if (breakpoint_map.count(previous_pc))
+    auto it = breakpoint_map.find(previous_pc);
+    if (it != breakpoint_map.end())
     {
-        auto& bp = breakpoint_map[previous_pc];
+        auto& bp = it->second;
         if (bp.is_enabled())
         {
             bp.disable();
+            set_pc(previous_pc);
             ptrace(PTRACE_SINGLESTEP, pid, nullptr, nullptr);
             wait_for_signal();
             bp.enable();

@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
+#include <sys/personality.h>
 #include <unistd.h>
 #include "debugger.h"
 
@@ -16,6 +17,7 @@ int main(int argc, char* argv[]) {
     auto pid = fork();
     if (pid == 0) {
         ptrace(PTRACE_TRACEME, 0, nullptr, nullptr);
+        personality(ADDR_NO_RANDOMIZE);
         execl(prog, prog, nullptr);
     }
     else if (pid >= 1) {
