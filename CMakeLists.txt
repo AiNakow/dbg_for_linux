@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include)
-set(LIBDWARF, ${CMAKE_SOURCE_DIR}/lib/libelfin/dwarf/libdwarf++.a)
-set(LIBELF, ${CMAKE_SOURCE_DIR}/lib/libelfin/elf/libelf++.a)
+set(LIBDWARF ${CMAKE_SOURCE_DIR}/lib/libelfin/dwarf/libdwarf++.a)
+set(LIBELF ${CMAKE_SOURCE_DIR}/lib/libelfin/elf/libelf++.a)
 set(LIBLINENOISE ${CMAKE_SOURCE_DIR}/lib/linenoise/liblinenoise.a)
 file(GLOB SOURCES "src/*.cpp")
 

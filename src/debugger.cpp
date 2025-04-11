@@ -4,9 +4,8 @@ namespace edb
 {
     void Debugger::run()
     {
-        int wait_status;
-        auto options = 0;
-        waitpid(pid, &wait_status, options);
+        wait_for_signal();
+        init_load_address();
 
         char *line = nullptr;
         while ((line = linenoise("edb> ")) != nullptr)
@@ -265,15 +264,78 @@ namespace edb
         }
     }
 
-    dwarf::die get_function_from_pc(uint64_t pc)
+    dwarf::die Debugger::get_function_from_pc(uint64_t pc)
     {
-
+        for (auto& cu : m_dwarf.compilation_units())
+        {
+            if (!dwarf::die_pc_range(cu.root()).contains(pc))
+            {
+                continue;
+            }
+            for (const auto& die : cu.root())
+            {
+                if (die.tag != dwarf::DW_TAG::subprogram)
+                {
+                    continue;
+                }
+                
+                if (dwarf::die_pc_range(die).contains(pc))
+                {
+                    return die;
+                }   
+            }            
+        }
+        
+        throw std::out_of_range("Function not found");
     }
 
-    dwarf::line_table::iterator Debugger::get_line_entry_from_pc(uint64_t pc) {}
-    void Debugger::init_load_address() {}
-    uint64_t Debugger::offset_load_address(uint64_t addr) {}
-    void Debugger::print_source(const std::string &filename, uint line, uint n_line_context) {}
+    dwarf::line_table::iterator Debugger::get_line_entry_from_pc(uint64_t pc) 
+    {
+        for (auto& cu : m_dwarf.compilation_units())
+        {
+            if (!dwarf::die_pc_range(cu.root()).contains(pc))
+            {
+                continue;
+            }
+            
+            auto &lt = cu.get_line_table();
+            auto it = lt.find_address(pc);
+            if (it == lt.end())
+            {
+                throw std::out_of_range("Line entry not found");
+            }
+            else
+            {
+                return it;
+            }
+        }
+        
+        throw std::out_of_range("Line entry not found");
+    }
+
+    void Debugger::init_load_address() 
+    {
+        if (m_elf.get_hdr().type == elf::et::dyn)
+        {
+            std::ifstream map("/proc/" + std::to_string(pid) + "maps");
+            std::string addr;
+            std::getline(map, addr, '-');
+
+            load_address = std::stol(addr, nullptr, 16);
+        }
+    }
+
+    uint64_t Debugger::offset_load_address(uint64_t addr) 
+    {
+        return addr - load_address;
+    }
+
+    void Debugger::print_source(const std::string &filename, uint line, uint n_line_context) 
+    {
+        std::ifstream file(filename);
+        
+    }
+
     siginfo_t Debugger::get_signal_info() 
     {
         siginfo_t siginfo;
@@ -281,5 +343,8 @@ namespace edb
         return siginfo;
     }
 
-    void Debugger::handle_sigtrap(siginfo_t siginfo) {}
+    void Debugger::handle_sigtrap(siginfo_t siginfo) 
+    {
+
+    }
 }

@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
+#include <fstream>
 #include <iostream>
 #include <regex>
 #include <string>

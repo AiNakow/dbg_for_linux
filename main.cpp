@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     }
     else if (pid >= 1) {
         std::cout << "Starting debugging process: " << pid << std::endl;
-        Debugger debugger(prog, pid);
+        edb::Debugger debugger(prog, pid);
         debugger.run();
     }
     
