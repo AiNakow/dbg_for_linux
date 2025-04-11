@@ -4,23 +4,26 @@
 #include <sys/ptrace.h>
 #include <cstdint>
 
-class Breakpoint
+namespace edb
 {
-public:
-    Breakpoint(pid_t pid, std::intptr_t addr) : pid(pid), addr(addr), enabled(false), saved_data() {}
-    ~Breakpoint() {}
+    class Breakpoint
+    {
+    public:
+        Breakpoint(pid_t pid, std::intptr_t addr) : pid(pid), addr(addr), enabled(false), saved_data() {}
+        ~Breakpoint() {}
 
-    void enable();
-    void disable();
+        void enable();
+        void disable();
 
-    auto is_enabled() const -> bool { return enabled; }
-    auto get_address() const -> std::intptr_t { return addr; }
+        auto is_enabled() const -> bool { return enabled; }
+        auto get_address() const -> std::intptr_t { return addr; }
 
-private:
-    pid_t pid;
-    std::intptr_t addr;
-    bool enabled;
-    uint8_t saved_data;
-};
+    private:
+        pid_t pid;
+        std::intptr_t addr;
+        bool enabled;
+        uint8_t saved_data;
+    };
+}
 
 #endif // BREAKPOINT_H
