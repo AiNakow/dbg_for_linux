@@ -333,7 +333,31 @@ namespace edb
     void Debugger::print_source(const std::string &filename, uint line, uint n_line_context) 
     {
         std::ifstream file(filename);
+        auto start_line = line <= n_line_context ? 1 : line - n_line_context;
+        auto end_line = line + n_line_context + (line < n_line_context ? n_line_context - line : 0) + 1;
         
+        char ch;
+        uint current_line = 1;
+        while (current_line < start_line && file.get(ch))
+        {
+            if (ch == '\n')
+            {
+                ++current_line;
+            }
+            
+        }
+        
+        while (current_line < end_line && file.get(ch))
+        {
+            std::cout << ch;
+            if (ch == '\n')
+            {
+                ++current_line;
+                std::cout << (current_line == line ? ">" : " ");
+            }
+        }
+        
+        std::cout << std::endl;
     }
 
     siginfo_t Debugger::get_signal_info() 
