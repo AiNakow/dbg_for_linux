@@ -156,6 +156,12 @@ namespace edb
                 }
             }
         }
+        else if (is_prefix(command, "stepi"))
+        {
+            single_step_in_instructions_with_bp();
+            auto line_entry = get_line_entry_from_pc(get_pc());
+            print_source(line_entry->file->path, line_entry->line);
+        }
         else
         {
             std::cerr << "Unknown command: " << command << std::endl;
@@ -398,6 +404,24 @@ namespace edb
         default:
             std::cout << "Unknown SIGTRAP code: " << siginfo.si_code << std::endl;
             break;
+        }
+    }
+
+    void Debugger::single_step_in_instructions()
+    {
+        ptrace(PTRACE_SINGLESTEP, pid, nullptr, nullptr);
+        wait_for_signal();
+    }
+
+    void Debugger::single_step_in_instructions_with_bp()
+    {
+        if (breakpoint_map.count(get_pc()))
+        {
+            step_over_breakpoint();
+        }
+        else
+        {
+            single_step_in_instructions();
         }
     }
 }

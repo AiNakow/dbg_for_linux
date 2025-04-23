@@ -50,6 +50,8 @@ namespace edb
         void print_source(const std::string& filename, uint line, uint n_line_context = 5);
         siginfo_t get_signal_info();
         void handle_sigtrap(siginfo_t siginfo);
+        void single_step_in_instructions();
+        void single_step_in_instructions_with_bp();
 
     private:
         std::string prog_name;
