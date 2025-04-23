@@ -5,7 +5,15 @@ namespace edb
     void Debugger::run()
     {
         wait_for_signal();
-        init_load_address();
+        try
+        {
+            init_load_address();
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            return;
+        }
 
         char *line = nullptr;
         while ((line = linenoise("edb> ")) != nullptr)
@@ -175,7 +183,7 @@ namespace edb
         for (const auto &rd : g_register_descriptors)
         {
             std::cout << std::setfill(' ') << std::setw(10) << std::left << rd.name << "0x" << std::setfill('0') << std::setw(16)
-                      << std::hex << get_register_value(pid, rd.r) << " | ";
+                      << std::right << std::hex << get_register_value(pid, rd.r) << " | ";
             ++count;
             if (count % 4 == 3 || count == g_register_descriptors.size() - 1)
             {
@@ -227,15 +235,13 @@ namespace edb
 
     void Debugger::step_over_breakpoint()
     {
-        auto previous_pc = get_pc() - 1;
-        auto it = breakpoint_map.find(previous_pc);
+        auto it = breakpoint_map.find(get_pc());
         if (it != breakpoint_map.end())
         {
             auto &bp = it->second;
             if (bp.is_enabled())
             {
                 bp.disable();
-                set_pc(previous_pc);
                 ptrace(PTRACE_SINGLESTEP, pid, nullptr, nullptr);
                 wait_for_signal();
                 bp.enable();
@@ -317,7 +323,12 @@ namespace edb
     {
         if (m_elf.get_hdr().type == elf::et::dyn)
         {
-            std::ifstream map("/proc/" + std::to_string(pid) + "maps");
+            std::string map_file_path = "/proc/" + std::to_string(pid) + "/maps";
+            std::ifstream map(map_file_path);
+            if (!map.is_open())
+            {
+                throw std::runtime_error("Failed to open map file: " + map_file_path);
+            }
             std::string addr;
             std::getline(map, addr, '-');
 
@@ -346,14 +357,15 @@ namespace edb
             }
             
         }
-        
+        std::cout << "Source file: " << filename << std::endl;
+        std::cout << (current_line == line ? ">" : " ") << current_line << " ";
         while (current_line < end_line && file.get(ch))
         {
             std::cout << ch;
             if (ch == '\n')
             {
                 ++current_line;
-                std::cout << (current_line == line ? ">" : " ");
+                std::cout << (current_line == line ? ">" : " ") << current_line << " ";
             }
         }
         
@@ -369,6 +381,23 @@ namespace edb
 
     void Debugger::handle_sigtrap(siginfo_t siginfo) 
     {
-
+        switch (siginfo.si_code)
+        {
+        case SI_KERNEL:
+        case TRAP_BRKPT:
+        {   
+            set_pc(get_pc() - 1);
+            std::cout << "Hit breakpoint at 0x" << std::setfill('0') << std::setw(16) << std::right << std::hex << get_pc() << std::endl;
+            auto offset = offset_load_address(get_pc());
+            auto line_entry = get_line_entry_from_pc(offset);
+            print_source(line_entry->file->path, line_entry->line);
+            break;
+        }
+        case TRAP_TRACE:
+            break;
+        default:
+            std::cout << "Unknown SIGTRAP code: " << siginfo.si_code << std::endl;
+            break;
+        }
     }
 }

@@ -47,7 +47,7 @@ namespace edb
         dwarf::line_table::iterator get_line_entry_from_pc(uint64_t pc);
         void init_load_address();
         uint64_t offset_load_address(uint64_t addr);
-        void print_source(const std::string& filename, uint line, uint n_line_context);
+        void print_source(const std::string& filename, uint line, uint n_line_context = 5);
         siginfo_t get_signal_info();
         void handle_sigtrap(siginfo_t siginfo);
 
