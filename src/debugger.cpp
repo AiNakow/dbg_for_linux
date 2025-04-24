@@ -159,7 +159,8 @@ namespace edb
         else if (is_prefix(command, "stepi"))
         {
             single_step_in_instructions_with_bp();
-            auto line_entry = get_line_entry_from_pc(get_pc());
+            auto offset = offset_load_address(get_pc());
+            auto line_entry = get_line_entry_from_pc(offset);
             print_source(line_entry->file->path, line_entry->line);
         }
         else
@@ -423,5 +424,52 @@ namespace edb
         {
             single_step_in_instructions();
         }
+    }
+
+    void Debugger::step_in()
+    {
+        auto line = get_line_entry_from_pc(offset_load_address(get_pc()))->line;
+        while (get_line_entry_from_pc(offset_load_address(get_pc()))->line == line)
+        {
+            single_step_in_instructions_with_bp();
+        }
+        
+        auto line_entry = get_line_entry_from_pc(offset_load_address(get_pc()));
+        print_source(line_entry->file->path, line_entry->line);
+    }
+
+    void Debugger::step_out()
+    {
+        auto stack_frame_pointer = get_register_value(pid, reg::rbp);
+        auto return_addr = read_memory(stack_frame_pointer);
+        bool is_temp_bp = false;
+        if (breakpoint_map.count(return_addr) == 0)
+        {
+            set_breakpoint_at_address(return_addr);
+            is_temp_bp = true;
+        }
+        
+        continue_execution();
+
+        if (is_temp_bp)
+        {
+            remove_bp(return_addr);
+        }
+    }
+
+    void Debugger::step_over()
+    {
+
+    }
+
+    void Debugger::remove_bp(std::uintptr_t addr)
+    {
+        auto it = breakpoint_map.find(addr);
+        if (it != breakpoint_map.end() && it->second.is_enabled())
+        {
+            it->second.disable();
+        }
+        
+        breakpoint_map.erase(addr);
     }
 }

@@ -52,6 +52,10 @@ namespace edb
         void handle_sigtrap(siginfo_t siginfo);
         void single_step_in_instructions();
         void single_step_in_instructions_with_bp();
+        void step_in();
+        void step_out();
+        void step_over();
+        void remove_bp(std::uintptr_t addr);
 
     private:
         std::string prog_name;
