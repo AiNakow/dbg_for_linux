@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10.0)
-project(dbg_for_linux VERSION 0.1.0 LANGUAGES C CXX)
+project(edb VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,8 +22,8 @@ foreach(outputconfig ${CMAKE_CONFIGURATION_TYPES})
     
 endforeach()
 
-add_executable(dbg_for_linux main.cpp ${SOURCES})
-target_link_libraries(dbg_for_linux ${LIBDWARF} ${LIBELF} ${LIBLINENOISE})
+add_executable(edb main.cpp ${SOURCES})
+target_link_libraries(edb ${LIBDWARF} ${LIBELF} ${LIBLINENOISE})
 
-target_include_directories(dbg_for_linux PRIVATE ${CMAKE_SOURCE_DIR}/lib/libelfin)
-target_include_directories(dbg_for_linux PRIVATE ${CMAKE_SOURCE_DIR}/lib/linenoise)
+target_include_directories(edb PRIVATE ${CMAKE_SOURCE_DIR}/lib/libelfin)
+target_include_directories(edb PRIVATE ${CMAKE_SOURCE_DIR}/lib/linenoise)

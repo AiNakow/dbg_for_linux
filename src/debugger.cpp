@@ -8,6 +8,7 @@ namespace edb
         try
         {
             init_load_address();
+            std::cout << "loaded address: 0x" << std::hex << load_address << std::dec << std::endl;
         }
         catch(const std::exception& e)
         {
@@ -49,6 +50,7 @@ namespace edb
                 return;
             }
             std::string addr(args[1], 2);
+            std::cout << "Set breakpoint at " << args[1] << std::endl;
             set_breakpoint_at_address(std::stol(addr, nullptr, 16));
         }
         else if (is_prefix("register", command))
@@ -163,6 +165,19 @@ namespace edb
             auto line_entry = get_line_entry_from_pc(offset);
             print_source(line_entry->file->path, line_entry->line);
         }
+        else if (is_prefix(command, "step"))
+        {
+            step_in();
+        }
+        else if (is_prefix(command, "next"))
+        {
+            step_over();
+        }
+        else if (is_prefix(command, "finish"))
+        {
+            step_out();
+        }
+        
         else
         {
             std::cerr << "Unknown command: " << command << std::endl;
@@ -178,7 +193,6 @@ namespace edb
 
     void Debugger::set_breakpoint_at_address(std::uintptr_t addr)
     {
-        std::cout << "Set breakpoint at 0x" << std::hex << addr << std::endl;
         Breakpoint breakpoint(pid, addr);
         breakpoint.enable();
         breakpoint_map.insert({addr, breakpoint});
@@ -287,7 +301,7 @@ namespace edb
             }
             for (const auto& die : cu.root())
             {
-                if (die.tag != dwarf::DW_TAG::subprogram)
+                if (die.tag != dwarf::DW_TAG::subprogram || !die.has(dwarf::DW_AT::low_pc))
                 {
                     continue;
                 }
@@ -365,14 +379,14 @@ namespace edb
             
         }
         std::cout << "Source file: " << filename << std::endl;
-        std::cout << (current_line == line ? ">" : " ") << current_line << " ";
+        std::cout << (current_line == line ? ">" : " ") << std::dec << current_line << " ";
         while (current_line < end_line && file.get(ch))
         {
             std::cout << ch;
             if (ch == '\n')
             {
                 ++current_line;
-                std::cout << (current_line == line ? ">" : " ") << current_line << " ";
+                std::cout << (current_line == line ? ">" : " ") << std::dec << current_line << " ";
             }
         }
         
@@ -441,7 +455,7 @@ namespace edb
     void Debugger::step_out()
     {
         auto stack_frame_pointer = get_register_value(pid, reg::rbp);
-        auto return_addr = read_memory(stack_frame_pointer);
+        auto return_addr = read_memory(stack_frame_pointer + 8);
         bool is_temp_bp = false;
         if (breakpoint_map.count(return_addr) == 0)
         {
@@ -459,7 +473,38 @@ namespace edb
 
     void Debugger::step_over()
     {
+        auto func = get_function_from_pc(offset_load_address(get_pc()));
+        auto func_start = dwarf::at_low_pc(func);
+        auto func_end = dwarf::at_high_pc(func);
 
+        std::vector<uint64_t> temp_breakpoint;
+        auto line = get_line_entry_from_pc(func_start);
+        auto start_line = get_line_entry_from_pc(offset_load_address(get_pc()));
+        while(line->address < func_end)
+        {
+            auto real_address = offset_dwarf_address(line->address);
+            if (line->address != start_line->address && breakpoint_map.count(real_address) == 0)
+            {
+                set_breakpoint_at_address(real_address);
+                temp_breakpoint.push_back(real_address);
+            }
+            ++line;
+        }
+
+        auto stack_frame_pointer = get_register_value(pid, reg::rbp);
+        auto return_address = read_memory(stack_frame_pointer + 8);
+        if (breakpoint_map.count(return_address) == 0)
+        {
+            set_breakpoint_at_address(return_address);
+            temp_breakpoint.push_back(return_address);
+        }
+
+        continue_execution();
+
+        for (auto addr : temp_breakpoint)
+        {
+            remove_bp(addr);
+        }
     }
 
     void Debugger::remove_bp(std::uintptr_t addr)
@@ -471,5 +516,10 @@ namespace edb
         }
         
         breakpoint_map.erase(addr);
+    }
+
+    uint64_t Debugger::offset_dwarf_address(uint64_t addr)
+    {
+        return addr + load_address;
     }
 }

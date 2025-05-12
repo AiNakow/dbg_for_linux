@@ -56,6 +56,7 @@ namespace edb
         void step_out();
         void step_over();
         void remove_bp(std::uintptr_t addr);
+        uint64_t offset_dwarf_address(uint64_t addr);
 
     private:
         std::string prog_name;
