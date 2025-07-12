@@ -213,8 +213,7 @@ namespace edb
         }
     }
 
-    uint64_t
-    Debugger::read_memory(std::uintptr_t addr)
+    uint64_t Debugger::read_memory(std::uintptr_t addr)
     {
         void *remote_addr = reinterpret_cast<void *>(addr);
 
@@ -445,6 +444,8 @@ namespace edb
         auto line = get_line_entry_from_pc(offset_load_address(get_pc()))->line;
         while (get_line_entry_from_pc(offset_load_address(get_pc()))->line == line)
         {
+            std::cout << "0x" << std::setfill('0') << std::setw(16) << std::hex << get_pc() << std::endl;
+            auto pc = offset_load_address(get_pc());
             single_step_in_instructions_with_bp();
         }
         
@@ -454,8 +455,25 @@ namespace edb
 
     void Debugger::step_out()
     {
-        auto stack_frame_pointer = get_register_value(pid, reg::rbp);
-        auto return_addr = read_memory(stack_frame_pointer + 8);
+        uint64_t stack_frame_pointer;
+        uint64_t return_addr;
+        switch (test_prologue())
+        {
+        case prologue_state::before:
+            stack_frame_pointer = get_register_value(pid, reg::rsp);
+            return_addr = read_memory(stack_frame_pointer);
+            break;
+        case prologue_state::during:
+            stack_frame_pointer = get_register_value(pid, reg::rsp);
+            return_addr = read_memory(stack_frame_pointer + 0x8);
+            break;
+        case prologue_state::after:
+            stack_frame_pointer = get_register_value(pid, reg::rbp);
+            return_addr = read_memory(stack_frame_pointer + 0x8);
+        default:
+            break;
+        }
+
         bool is_temp_bp = false;
         if (breakpoint_map.count(return_addr) == 0)
         {
@@ -492,7 +510,7 @@ namespace edb
         }
 
         auto stack_frame_pointer = get_register_value(pid, reg::rbp);
-        auto return_address = read_memory(stack_frame_pointer + 8);
+        auto return_address = read_memory(stack_frame_pointer + 0x8);
         if (breakpoint_map.count(return_address) == 0)
         {
             set_breakpoint_at_address(return_address);
@@ -521,5 +539,36 @@ namespace edb
     uint64_t Debugger::offset_dwarf_address(uint64_t addr)
     {
         return addr + load_address;
+    }
+
+    // 重构判断序言前中后状态的条件
+    prologue_state Debugger::test_prologue()
+    {
+        uint64_t value;
+        auto pc = get_register_value(pid, reg::rip);
+        value = read_memory(pc);
+
+        std::array<uint8_t, 8> code;
+        bool flag = false;
+        for (size_t i = 0; i < 5; i++)
+        {
+            code[i] = static_cast<uint8_t>(value & 0xff);
+            if (code[i] == 0x55)
+            {
+                flag = true;
+            }
+            
+            value >>= 8;
+        }
+        if (code[0] == 0x48 && code[1] == 0x89 && code[2] == 0xE5)
+        {
+            return prologue_state::during;
+        }
+        else if (flag)
+        {
+            return prologue_state::before;
+        }
+        
+        return prologue_state::after;
     }
 }

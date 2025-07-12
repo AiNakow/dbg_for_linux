@@ -21,6 +21,13 @@
 
 namespace edb
 {
+    enum class prologue_state 
+    {
+        before,
+        during,
+        after
+    };
+
     class Debugger
     {
     public:
@@ -57,7 +64,7 @@ namespace edb
         void step_over();
         void remove_bp(std::uintptr_t addr);
         uint64_t offset_dwarf_address(uint64_t addr);
-
+        prologue_state test_prologue();
     private:
         std::string prog_name;
         pid_t pid;
